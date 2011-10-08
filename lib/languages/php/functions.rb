@@ -6,8 +6,8 @@ class Code_parser::Language::Php
 		loop do
 			if match = self.matchclear(/\A\$#{@regex_varname}\s*(,\s*|)/)
 				args << {
-					"varname" => match[1],
-					"newname" => "phpvar_#{match[1]}"
+					:name => match[1],
+					:name_new => "phpvar_#{match[1]}"
 				}
 			elsif match = self.matchclear(/\A\)\s*\{/)
 				break

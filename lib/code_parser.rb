@@ -25,7 +25,7 @@ class Code_parser
   end
   
   class Function_definition
-    attr_reader :block
+    attr_reader :args, :block
     
     def initialize(args)
       @args = args
