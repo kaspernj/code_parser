@@ -41,6 +41,31 @@ class Code_parser
     end
   end
   
+  class Class_definition
+    attr_reader :args, :block
+    
+    def initialize(args)
+      @args = args
+      @block = Code_parser::Block.new
+    end
+  end
+  
+  class Class_spawn
+    attr_reader :args
+    
+    def initialize(args)
+      @args = args
+    end
+  end
+  
+  class Class_object_function_call
+    attr_reader :args
+    
+    def initialize(args)
+      @args = args
+    end
+  end
+  
   class Argument
     attr_reader :args
     

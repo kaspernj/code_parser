@@ -12,7 +12,7 @@ class Code_parser::Language::Php
 			elsif match = self.matchclear(/\A\)\s*\{/)
 				break
 			else
-				raise "Could not match function arguments."
+				raise "Could not match function arguments: '#{@cont}'."
 			end
 		end
 		
@@ -21,7 +21,7 @@ class Code_parser::Language::Php
       :args => args
 		)
 		
-		@blocks.last.actions << funcdef
+		@cur_block.actions << funcdef
     @blocks << funcdef.block
     @cur_block = funcdef.block
 		
@@ -35,11 +35,11 @@ class Code_parser::Language::Php
 		
 		loop do
 			if !arg_found and match = self.matchclear(/\A\"/)
-        args << Code_parser::Argument.new(
+        arg = Code_parser::Argument.new(
           :type => :string,
           :value => self.match_semi
         )
-        
+        args << arg
 				arg_found = true
 			elsif !arg_found and match = self.matchclear(/\A\$(#{@regex_varname})/)
         arg = Code_parser::Argument.new(
@@ -59,8 +59,13 @@ class Code_parser::Language::Php
 				arg_found = false
 			elsif arg_found and match = self.matchclear(/\A;/)
 				break
+      elsif arg_found and match = self.matchclear(/\A\)\s*;/)
+        break
+      elsif arg_found and match = self.matchclear(/\A\s*,\s*/)
+        arg_found = false
+        next
 			else
-				raise "Could not figure out what to do."
+				raise "Could not figure out what to do parsing function arguments: '#{@cont}'."
 			end
 		end
 		
@@ -80,15 +85,28 @@ class Code_parser::Language::Php
         )
 				arg_found = true
 			elsif !arg_found and match = self.matchclear(/\A\$(#{@regex_varname})/)
-				@retcont += "phpvar_#{match[1]}"
-				arg_found = true
+				arg = Code_parser::Argument.new(
+          :type => :variable,
+          :name => match[1]
+        )
+        
+        if arg and arg.args[:and]
+          arg.args[:and] = arg
+        else
+          args << arg
+        end
+        
+        arg_found = true
 			elsif arg_found and match = self.matchclear(/\A\.\s*/)
 				@retcont += " + "
 				arg_found = false
 			elsif arg_found and match = self.matchclear(/\A\)\s*;/)
 				break
+      elsif arg_found and match = self.matchclear(/\A\s*,\s*/)
+        arg_found = false
+        next
 			else
-				raise "Could not figure out what to do."
+				raise "Could not figure out what to do parsing arguments: '#{@cont}'."
 			end
 		end
 		
@@ -98,12 +116,13 @@ class Code_parser::Language::Php
 	def match_semi
     str = ""
 		loop do
-			if match = self.matchclear(/\A[A-z\d_\.]+/)
+			if match = self.matchclear(/\A#{@regex_varcontent}/) and match[0].to_s.length > 0
+        Knj::Php.print_r(match)
 				str += match[0]
 			elsif match = self.matchclear(/\A\"/)
 				break
 			else
-				raise "Could not figure out what to do."
+				raise "Could not figure out what to do matching semi: '#{@cont}'."
 			end
 		end
 		

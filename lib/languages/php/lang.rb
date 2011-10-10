@@ -1,4 +1,5 @@
 require "#{File.dirname(__FILE__)}/functions.rb"
+require "#{File.dirname(__FILE__)}/classes.rb"
 
 class Code_parser::Language::Php
   def initialize(args = {})
@@ -8,8 +9,10 @@ class Code_parser::Language::Php
     @args = args
     @cont = File.read(@args["file"])
     
-    @regex_funcname = "([A-z][A-z\d_]*)"
-    @regex_varname = "([A-z][A-z\d]*)"
+    @regex_funcname = "([A-z][A-z0-9\d_]*)"
+    @regex_varname = "([A-z][A-z0-9\d]*)"
+    @regex_varcontent = "([^\"]*)"
+    @regex_classname = "([A-z][A-z0-9\d_]+)"
     
     @tabs = 0
     @funcs_started = 0
@@ -81,8 +84,14 @@ class Code_parser::Language::Php
         self.search_starttag
       elsif @cont.length <= 0
         break
+      elsif match = self.matchclear(/\Aclass\s+([A-z0-9_]+)\s*{\s*/)
+        self.class_parse(match[1])
+      elsif match = self.matchclear(/\A\s*\$#{@regex_varname}\s+=\s*new\s*#{@regex_classname}\s*\(/)
+        self.class_spawn(match[2], match[1])
+      elsif match = self.matchclear(/\A\s*\$#{@regex_varname}->#{@regex_funcname}\(/)
+        self.class_obj_func_call(match[2], match[1])
       else
-        raise "Could not find out whats next."
+        raise "Could not find out whats next:\n\n" + @cont
       end
     end
   end
