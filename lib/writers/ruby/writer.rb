@@ -14,6 +14,7 @@ class Code_parser::Writer::Ruby
   
   def tabs_str
     str = ""
+    
     0.upto(@tabs - 1) do
       str += "  "
     end
@@ -22,62 +23,115 @@ class Code_parser::Writer::Ruby
   end
   
   def to_s
-    str = ""
+    @str = ""
+    
     @args[:block].actions.each do |action|
       if action.is_a?(Code_parser::Function_definition)
         name = action.args[:name]
         name = "initialize" if name == "__construct"
         
-        str += "#{tabs_str}def #{name}("
+        @str += "#{tabs_str}def #{name}("
         
         first = true
         action.args[:args].each do |func_argument|
-          str += ", " if !first
+          @str +=  ", " if !first
           first = false if first
-          str += func_argument[:name]
+          @str += func_argument[:name]
           
           if func_argument[:default_value_has]
-            str += " = \"#{func_argument[:default_value]}\""
+            @str += " = \"#{func_argument[:default_value]}\""
           end
         end
         
-        str += ")\n"
-        str += Code_parser::Writer::Ruby.new(:block => action.block, :tabs => @tabs + 1).to_s
-        str += "#{tabs_str}end\n#{tabs_str}\n"
+        @str += ")\n"
+        @str += Code_parser::Writer::Ruby.new(:block => action.block, :tabs => @tabs + 1).to_s
+        @str += "#{tabs_str}end\n#{tabs_str}\n"
       elsif action.is_a?(Code_parser::Function_call)
-        str += "#{tabs_str}#{action.args[:name]}("
-        str += self.arguments_to_ruby(action.args[:args])
-        str += ")\n"
+        @str += "#{tabs_str}#{action.args[:name]}("
+        @str += self.arguments_to_ruby(action.args[:args])
+        @str += ")\n"
       elsif action.is_a?(Code_parser::Class_definition)
-        str += "#{tabs_str}class #{self.ruby_class_name(action.args[:name])}\n"
-        str += Code_parser::Writer::Ruby.new(:block => action.block, :tabs => @tabs + 1).to_s
-        str += "#{tabs_str}end\n#{tabs_str}\n"
+        @str += "#{tabs_str}class #{self.ruby_class_name(action.args[:name])}\n"
+        @str += Code_parser::Writer::Ruby.new(:block => action.block, :tabs => @tabs + 1).to_s
+        @str += "#{tabs_str}end\n#{tabs_str}\n"
       elsif action.is_a?(Code_parser::Class_spawn)
-        str += "#{tabs_str}#{action.args[:var_name]} = #{self.ruby_class_name(action.args[:class_name])}.new"
+        @str += "#{tabs_str}#{action.args[:var_name]} = #{self.ruby_class_name(action.args[:class_name])}.new"
         
         if !action.args[:args].empty?
-          str += "("
-          str += self.arguments_to_ruby(action.args[:args])
-          str += ")"
+          @str += "("
+          @str += self.arguments_to_ruby(action.args[:args])
+          @str += ")"
         end
         
-        str += "\n"
+        @str += "\n"
       elsif action.is_a?(Code_parser::Class_object_function_call)
-        str += "#{tabs_str}#{action.args[:var_name]}.#{action.args[:func_name]}"
+        @str += "#{tabs_str}#{action.args[:var_name]}.#{action.args[:func_name]}"
         
         if !action.args[:args].empty?
-          str += "("
-          str += self.arguments_to_ruby(action.args[:args])
-          str += ")"
+          @str += "("
+          @str += self.arguments_to_ruby(action.args[:args])
+          @str += ")"
         end
         
-        str += "\n"
+        @str += "\n"
+      elsif action.is_a?(Code_parser::Variable_definition)
+        if action.args[:value].is_a?(Code_parser::String_definition)
+          @str += "#{tabs_str}#{action.args[:var_name]} = "
+          self.string_definition(action.args[:value])
+          @str += "\n"
+        else
+          raise "Unknown class for variable definition: #{action[:value]}"
+        end
+      elsif action.is_a?(Code_parser::Condition_if)
+        @str += "#{tabs_str}if "
+        
+        self.condition_group_write(action.args[:group])
+        
+        @str += "\n"
+        @tabs += 1
+        @str += Code_parser::Writer::Ruby.new(:block => action.args[:block], :tabs => @tabs + 1).to_s
+        @tabs += -1
+        @str += "#{tabs_str}end\n"
       else
         raise "Unknown action: '#{action.class.name}'."
       end
     end
     
-    return str
+    return @str
+  end
+  
+  def condition_group_write(grp)
+    @str += "("
+    
+    raise "No conditions?" if !grp.args[:conditions] or grp.args[:conditions].empty?
+    
+    first = true
+    grp.args[:conditions].each do |cond|
+      if first
+        first = false
+      else
+        raise "Second string?"
+      end
+      
+      if cond.args[:from][:type] == :var
+        @str += "#{cond.args[:from][:var_name]}"
+      else
+        raise "Unknown from-type: #{cond.args[:from][:type]}"
+      end
+      
+      if cond.args[:type] == :equals and cond.args[:to][:type] == :string
+        @str += ".to_s == "
+      else
+        Knj::Php.print_r(cond.args)
+        raise "Unknown condition type: #{cond[:type]}"
+      end
+      
+      if cond.args[:to][:type] == :string
+        self.string_definition(cond.args[:to][:str])
+      end
+    end
+    
+    @str += ")"
   end
   
   def arguments_to_ruby(args)
@@ -97,6 +151,10 @@ class Code_parser::Writer::Ruby
     end
     
     return str
+  end
+  
+  def string_definition(str_def)
+    @str += "#{str_def.args[:sign]}#{str_def.args[:str]}#{str_def.args[:sign]}"
   end
   
   def ruby_class_name(str)

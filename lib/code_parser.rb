@@ -74,6 +74,46 @@ class Code_parser
     end
   end
   
+  class String_definition
+    attr_reader :args
+    
+    def initialize(args)
+      @args = args
+    end
+  end
+  
+  class Variable_definition
+    attr_reader :args
+    
+    def initialize(args)
+      @args = args
+    end
+  end
+  
+  class Condition
+    attr_reader :args
+    
+    def initialize(args)
+      @args = args
+    end
+  end
+  
+  class Condition_group
+    attr_reader :args
+    
+    def initialize(args)
+      @args = args
+    end
+  end
+  
+  class Condition_if
+    attr_reader :args
+    
+    def initialize(args)
+      @args = args
+    end
+  end
+  
   def initialize(args = {})
     
   end

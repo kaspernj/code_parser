@@ -1,5 +1,7 @@
 require "#{File.dirname(__FILE__)}/functions.rb"
 require "#{File.dirname(__FILE__)}/classes.rb"
+require "#{File.dirname(__FILE__)}/variables.rb"
+require "#{File.dirname(__FILE__)}/conditions_if.rb"
 
 class Code_parser::Language::Php
   def initialize(args = {})
@@ -63,6 +65,10 @@ class Code_parser::Language::Php
     return false
   end
   
+  def match(regex)
+    return @cont.match(regex)
+  end
+  
   def search_newstuff
     loop do
       if match = self.matchclear(/\Afunction\s+#{@regex_funcname}\(/)
@@ -90,6 +96,12 @@ class Code_parser::Language::Php
         self.class_spawn(match[2], match[1])
       elsif match = self.matchclear(/\A\s*\$#{@regex_varname}->#{@regex_funcname}\(/)
         self.class_obj_func_call(match[2], match[1])
+      elsif match = self.matchclear(/\A\s*\$#{@regex_varname}\s*=\s*/)
+        self.variable_definition(
+          :var_name => match[1]
+        )
+      elsif match = self.matchclear(/\A\s*if\s*\(/)
+        self.condition_if
       else
         raise "Could not find out whats next:\n\n" + @cont
       end
