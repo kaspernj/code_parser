@@ -5,9 +5,26 @@ class Code_parser::Language::Php
 		
 		loop do
 			if match = self.matchclear(/\A\$#{@regex_varname}\s*(,\s*|)/)
+        def_val = nil
+        def_val_has = false
+        
+        if def_match = self.matchclear(/\A\s*=\s*/)
+          pos = ["\"", "'"]
+          
+          pos.each do |pos_val|
+            if def_val_match = self.matchclear(/\A#{pos_val}(.+?)#{pos_val}\s*/)
+              def_val = def_val_match[1]
+              def_val_has = true
+              break
+            end
+          end
+        end
+        
 				args << {
 					:name => match[1],
-					:name_new => "phpvar_#{match[1]}"
+					:name_new => "phpvar_#{match[1]}",
+					:default_value => def_val,
+					:default_value_has => def_val_has
 				}
 			elsif match = self.matchclear(/\A\)\s*\{/)
 				break
@@ -117,7 +134,6 @@ class Code_parser::Language::Php
     str = ""
 		loop do
 			if match = self.matchclear(/\A#{@regex_varcontent}/) and match[0].to_s.length > 0
-        Knj::Php.print_r(match)
 				str += match[0]
 			elsif match = self.matchclear(/\A\"/)
 				break

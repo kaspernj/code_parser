@@ -3,6 +3,7 @@ class Code_parser::Writer::Ruby
   
   def initialize(args)
     @args = args
+    raise "No block was given." if !@args[:block]
     
     if !@args.has_key?(:tabs)
       @tabs = 0
@@ -34,6 +35,10 @@ class Code_parser::Writer::Ruby
           str += ", " if !first
           first = false if first
           str += func_argument[:name]
+          
+          if func_argument[:default_value_has]
+            str += " = \"#{func_argument[:default_value]}\""
+          end
         end
         
         str += ")\n"
