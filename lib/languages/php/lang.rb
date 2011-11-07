@@ -52,12 +52,16 @@ class Code_parser::Language::Php
     @cont = @cont.gsub(/\A\s+/, "")
   end
   
-  def matchclear(regex, debug = false)
+  def matchclear(regex, args = {})
     if match = @cont.match(regex)
-      print "Before (#{debug}):\n#{@cont}\n\n" if debug
+      print "Before (#{args[:debug]}):\n#{@cont}\n\n" if args[:debug]
       @cont = @cont.gsub(regex, "")
-      self.clear_whitespace
-      print "After (#{debug}):\n#{@cont}\n\n\n" if debug
+      
+      if !args.key?(:clear_whitespace) or args[:clear_whitespace]
+        self.clear_whitespace
+      end
+      
+      print "After (#{args[:debug]}):\n#{@cont}\n\n\n" if args[:debug]
       
       return match
     end

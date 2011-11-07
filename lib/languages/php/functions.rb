@@ -53,7 +53,7 @@ class Code_parser::Language::Php
 		grouping_ntype = nil
 		
 		loop do
-			if !arg_found and match = self.matchclear(/\A\"/)
+			if !arg_found and match = self.matchclear(/\A\"/, {:clear_whitespace => false})
         arg = Code_parser::Argument.new(
           :type => :string,
           :value => self.match_semi
@@ -114,7 +114,7 @@ class Code_parser::Language::Php
 		arg = nil
 		
 		loop do
-			if !arg_found and match = self.matchclear(/\A\"/)
+			if !arg_found and match = self.matchclear(/\A\"/, {:clear_whitespace => false})
         args << Code_parser::Argument.new(
           :type => :string,
           :value => self.match_semi
@@ -145,6 +145,9 @@ class Code_parser::Language::Php
 	end
 	
 	def match_semi
+    print "Match semi for:\n"
+    print @cont
+    
     str = ""
 		loop do
 			if match = self.matchclear(/\A#{@regex_varcontent}/) and match[0].to_s.length > 0
