@@ -31,6 +31,10 @@ class Code_parser
       @args = args
       @block = Code_parser::Block.new
     end
+    
+    def name
+      return @args[:name]
+    end
   end
   
   class Function_call

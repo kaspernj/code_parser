@@ -38,6 +38,10 @@ class Code_parser::Language::Php
       :args => args
 		)
 		
+		if funcdef.name.downcase == "__construct"
+      funcdef.args[:parsed_meaning] = :constructor
+    end
+		
 		@cur_block.actions << funcdef
     @blocks << funcdef.block
     @cur_block = funcdef.block

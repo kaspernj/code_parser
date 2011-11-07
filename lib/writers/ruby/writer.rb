@@ -28,7 +28,7 @@ class Code_parser::Writer::Ruby
     @args[:block].actions.each do |action|
       if action.is_a?(Code_parser::Function_definition)
         name = action.args[:name]
-        name = "initialize" if name == "__construct"
+        name = "initialize" if action.args[:parsed_meaning] == :constructor
         
         @str += "#{tabs_str}def #{name}("
         
