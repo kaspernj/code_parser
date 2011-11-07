@@ -47,21 +47,31 @@ class Code_parser::Writer::Ruby
         @str += Code_parser::Writer::Ruby.new(:block => action.block, :tabs => @tabs + 1).to_s
         @str += "#{tabs_str}end\n#{tabs_str}\n"
       elsif action.is_a?(Code_parser::Function_call)
-        @str += "#{tabs_str}#{action.args[:name]}"
-        
-        if action.args[:args].length > 1
-          @str += "("
+        if action.args[:parsed_meaning] == :unset
+          action.args[:args].each do |arg|
+            if arg.type == :variable
+              @str += "#{tabs_str}#{arg.name} = nil\n"
+            else
+              raise "Unknown type: '#{arg.type}'."
+            end
+          end
         else
-          @str += " "
+          @str += "#{tabs_str}#{action.args[:name]}"
+          
+          if action.args[:args].length > 1
+            @str += "("
+          else
+            @str += " "
+          end
+          
+          @str += self.arguments_to_ruby(action.args[:args])
+          
+          if action.args[:args].length > 1
+            @str += ")"
+          end
+          
+          @str += "\n"
         end
-        
-        @str += self.arguments_to_ruby(action.args[:args])
-        
-        if action.args[:args].length > 1
-          @str += ")"
-        end
-        
-        @str += "\n"
       elsif action.is_a?(Code_parser::Class_definition)
         @str += "#{tabs_str}class #{self.ruby_class_name(action.args[:name])}\n"
         @str += Code_parser::Writer::Ruby.new(:block => action.block, :tabs => @tabs + 1).to_s

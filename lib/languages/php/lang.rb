@@ -86,10 +86,17 @@ class Code_parser::Language::Php
         @blocks.delete(@blocks.last)
         @cur_block = @blocks.last
       elsif match = self.matchclear(/\A([A-z][A-z\d_]*)\(/)
-        @cur_block.actions << Code_parser::Function_call.new(
-          :name => match[1],
+        func_name = match[1].to_s
+        func_call = Code_parser::Function_call.new(
+          :name => func_name,
           :args => self.func_args_given
         )
+        
+        if func_name.downcase == "unset"
+          func_call.args[:parsed_meaning] = :unset
+        end
+        
+        @cur_block.actions << func_call
       elsif match = self.matchclear(/\A\?>/)
         self.search_starttag
       elsif @cont.length <= 0

@@ -72,6 +72,14 @@ class Code_parser
     def initialize(args)
       @args = args
     end
+    
+    def type
+      return @args[:type]
+    end
+    
+    def name
+      return @args[:name]
+    end
   end
   
   class Argument_grouping
