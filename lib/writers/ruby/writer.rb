@@ -47,9 +47,21 @@ class Code_parser::Writer::Ruby
         @str += Code_parser::Writer::Ruby.new(:block => action.block, :tabs => @tabs + 1).to_s
         @str += "#{tabs_str}end\n#{tabs_str}\n"
       elsif action.is_a?(Code_parser::Function_call)
-        @str += "#{tabs_str}#{action.args[:name]}("
+        @str += "#{tabs_str}#{action.args[:name]}"
+        
+        if action.args[:args].length > 1
+          @str += "("
+        else
+          @str += " "
+        end
+        
         @str += self.arguments_to_ruby(action.args[:args])
-        @str += ")\n"
+        
+        if action.args[:args].length > 1
+          @str += ")"
+        end
+        
+        @str += "\n"
       elsif action.is_a?(Code_parser::Class_definition)
         @str += "#{tabs_str}class #{self.ruby_class_name(action.args[:name])}\n"
         @str += Code_parser::Writer::Ruby.new(:block => action.block, :tabs => @tabs + 1).to_s
@@ -134,19 +146,52 @@ class Code_parser::Writer::Ruby
     @str += ")"
   end
   
-  def arguments_to_ruby(args)
+  def arguments_to_ruby(arguments, args = {})
     str = ""
     first = true
-    args.each do |argument|
-      str += ", " if !first
-      first = false if first
+    arguments.each do |argument|
+      if argument.args[:and] and !first
+        str += " + "
+      else
+        str += ", " if !first
+        first = false if first
+      end
       
-      if argument.args[:type] == :string
+      if argument.is_a?(Code_parser::Argument_grouping)
+        str += "(" if argument.contains_groupings?
+        
+        first_g = true
+        argument.args[:arguments].each do |arg_g|
+          if arg_g[:type] == :first
+            #ignore.
+          elsif arg_g[:type] == :and
+            str += " + "
+          else
+            raise "Unknown grouping type: '#{arg_g[:type]}'."
+          end
+          
+          atr_args = {}
+          gtype = argument.grouping_type
+          atr_args[:typecast] = gtype if gtype
+          
+          str += self.arguments_to_ruby([arg_g[:arg]], atr_args)
+        end
+        
+        str += ")" if argument.contains_groupings?
+      elsif argument.args[:type] == :string
         str += "\"#{argument.args[:value]}\""
       elsif argument.args[:type] == :variable
         str += "#{argument.args[:name]}"
+        
+        if args[:typecast]
+          if args[:typecast] == :string
+            str += ".to_s"
+          else
+            raise "Unknown typecast: '#{args[:typecast]}'."
+          end
+        end
       else
-        raise "Unknown argument-type: '#{argument.args[:type]}'."
+        raise "Unknown argument-type: '#{argument.class.name}', '#{argument.args[:type]}'."
       end
     end
     

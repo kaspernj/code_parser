@@ -49,6 +49,8 @@ class Code_parser::Language::Php
 		arg_found = false
 		args = []
 		arg = nil
+		grouping = nil
+		grouping_ntype = nil
 		
 		loop do
 			if !arg_found and match = self.matchclear(/\A\"/)
@@ -56,7 +58,13 @@ class Code_parser::Language::Php
           :type => :string,
           :value => self.match_semi
         )
-        args << arg
+        
+        if grouping
+          grouping.args[:arguments] << {:type => grouping_ntype, :arg => arg}
+        else
+          args << arg
+        end
+        
 				arg_found = true
 			elsif !arg_found and match = self.matchclear(/\A\$(#{@regex_varname})/)
         arg = Code_parser::Argument.new(
@@ -64,21 +72,32 @@ class Code_parser::Language::Php
           :name => match[1]
         )
         
-        if arg and arg.args[:and]
-          arg.args[:and] = arg
+        if grouping
+          grouping.args[:arguments] << {:type => grouping_ntype, :arg => arg}
         else
           args << arg
         end
         
 				arg_found = true
 			elsif arg_found and match = self.matchclear(/\A\.\s*/)
-        arg.args[:and] = true
+        if !grouping
+          arg_last = args.last
+          args.delete(arg_last)
+          grouping_ntype = :and
+          
+          grouping = Code_parser::Argument_grouping.new
+          grouping.args[:arguments] << {:type => :first, :arg => arg_last}
+          args << grouping
+        end
+        
 				arg_found = false
 			elsif arg_found and match = self.matchclear(/\A;/)
 				break
       elsif arg_found and match = self.matchclear(/\A\)\s*;/)
         break
       elsif arg_found and match = self.matchclear(/\A\s*,\s*/)
+        grouping = nil
+        grouping_ntype = nil
         arg_found = false
         next
 			else
@@ -107,15 +126,10 @@ class Code_parser::Language::Php
           :name => match[1]
         )
         
-        if arg and arg.args[:and]
-          arg.args[:and] = arg
-        else
-          args << arg
-        end
-        
+        args << arg
         arg_found = true
 			elsif arg_found and match = self.matchclear(/\A\.\s*/)
-				@retcont += " + "
+				raise "Unimplemented and-argument."
 				arg_found = false
 			elsif arg_found and match = self.matchclear(/\A\)\s*;/)
 				break

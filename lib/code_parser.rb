@@ -74,6 +74,30 @@ class Code_parser
     end
   end
   
+  class Argument_grouping
+    attr_reader :args
+    
+    def initialize(args = {:arguments => []})
+      @args = args
+    end
+    
+    def contains_groupings?
+      @args[:arguments].each do |arg|
+        return true if arg[:arg].is_a?(Argument_grouping)
+      end
+      
+      return false
+    end
+    
+    def grouping_type
+      @args[:arguments].each do |arg|
+        return :string if arg[:arg].args[:type] == :string
+      end
+      
+      return false
+    end
+  end
+  
   class String_definition
     attr_reader :args
     
