@@ -145,9 +145,6 @@ class Code_parser::Language::Php
 	end
 	
 	def match_semi
-    print "Match semi for:\n"
-    print @cont
-    
     str = ""
 		loop do
 			if match = self.matchclear(/\A#{@regex_varcontent}/) and match[0].to_s.length > 0
